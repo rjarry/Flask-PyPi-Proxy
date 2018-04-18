@@ -2,7 +2,7 @@
 
 from flask_pypi_proxy.app import app
 from os.path import join
-from hashlib import md5
+from hashlib import sha256
 
 
 def is_private(egg_name):
@@ -34,10 +34,10 @@ def get_package_path(egg_name):
     return join(get_base_path(), egg_name)
 
 
-def get_md5_for_content(package_content):
-    ''' Given the content of a package it returns the md5 of the file.
+def get_sha256_for_content(package_content):
+    ''' Given the content of a package it returns the sha256 of the file.
     '''
-    res = md5(package_content)
+    res = sha256(package_content)
     return res.hexdigest()
 
 

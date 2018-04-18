@@ -11,7 +11,7 @@ import magic
 from flask import make_response, request, abort
 from flask_pypi_proxy.app import app
 from flask_pypi_proxy.utils import (get_base_path, get_package_path,
-                                    get_md5_for_content)
+                                    get_sha256_for_content)
 from os import makedirs
 from os.path import join, exists
 from requests import get, head
@@ -80,9 +80,9 @@ def package(package_type, letter, package_name, package_file):
             filecontent = egg_file.read(-1)
             mimetype = magic.from_file(egg_filename, mime=True)
 
-        with open(egg_filename + '.md5', 'w') as md5_output:
-            md5 = get_md5_for_content(filecontent)
-            md5_output.write(md5)
+        sha256 = get_sha256_for_content(filecontent)
+        with open(egg_filename + '.sha256', 'w') as f:
+            f.write(sha256)
 
         return _respond(filecontent, mimetype)
 

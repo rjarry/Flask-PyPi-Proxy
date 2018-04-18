@@ -34,6 +34,10 @@ def index():
         file = request.files['content']
         filename = secure_filename(file.filename)
         file.save(join(path, filename))
-        with open(join(path, filename + '.md5'), 'w') as md5_file:
-            md5_file.write(request.form['md5_digest'])
+        if 'sha256_digest' in request.form:
+            with open(join(path, filename + '.sha256'), 'w') as f:
+                f.write(request.form['sha256_digest'])
+        else:
+            with open(join(path, filename + '.md5'), 'w') as f:
+                f.write(request.form['md5_digest'])
     return 'Registered'

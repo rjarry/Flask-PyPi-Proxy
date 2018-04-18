@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 from setuptools import setup, find_packages
 from flask_pypi_proxy import VERSION

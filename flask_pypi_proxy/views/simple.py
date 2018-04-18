@@ -8,7 +8,7 @@ import urllib
 import urlparse
 from collections import namedtuple
 from os import listdir
-from os.path import join, exists, basename
+from os.path import join, exists, basename, splitext
 
 from bs4 import BeautifulSoup
 from flask import abort, render_template
@@ -19,7 +19,7 @@ from flask_pypi_proxy.utils import (get_package_path, get_base_path,
                                     is_private, url_is_egg_file)
 
 
-VersionData = namedtuple('VersionData', ['name', 'md5', 'external_link'])
+VersionData = namedtuple('VersionData', ['name', 'cksum', 'algo', 'external_link'])
 
 
 @app.route('/simple/')
@@ -80,17 +80,16 @@ def simple_package(package_name):
         )
 
         for filename in listdir(package_folder):
-            if not filename.endswith('.md5'):
-                # I only read .md5 files so I skip this egg (or tar,
-                # or zip) file
+            name, ext = splitext(filename)
+            if ext not in ('.md5', '.sha256'):
+                # I only read .md5 and .sha256 files so I skip this egg
+                # (or tar, or zip) file
                 continue
 
-            with open(join(package_folder, filename)) as md5_file:
-                md5 = md5_file.read(-1)
+            with open(join(package_folder, filename)) as f:
+                cksum = f.read(-1)
 
-            # remove .md5 extension
-            name = filename[:-4]
-            data = VersionData(name, md5, None)
+            data = VersionData(name, cksum, ext[1:], None)
             package_versions.append(data)
 
         return render_template('simple_package.html', **template_data)
@@ -132,37 +131,29 @@ def simple_package(package_name):
 
             href = panchor.get('href')
             app.logger.debug('Found the link: %s', href)
-            if href.startswith('../../packages/'):
-                # then the package is hosted on PyPI.
-                pk_name = basename(href)
-                pk_name, md5_data = pk_name.split('#md5=')
-                pk_name = pk_name.replace('#md5=', '')
-
-                # remove md5 part to make the url shorter.
-                split_data = urlparse.urlsplit(href)
-                absolute_url = urlparse.urljoin(url, split_data.path)
-
-                external_link= urllib.urlencode({'remote': absolute_url})
-                data = VersionData(pk_name, md5_data, external_link)
-                package_versions.append(data)
-                continue
 
             parsed = urlparse.urlparse(href)
             if parsed.hostname:
                 # then the package had a full path to the file
-                if parsed.hostname == 'pypi.python.org':
+                if parsed.hostname == 'files.pythonhosted.org':
                     # then it is hosted on the PyPI server, so I change
                     # it to make it a relative url
                     pk_name = basename(parsed.path)
                     if '#md5=' in parsed.path:
-                        pk_name, md5_data = pk_name.split('#md5=')
+                        pk_name, cksum = pk_name.split('#md5=')
                         pk_name = pk_name.replace('#md5=', '')
+                        algo = 'md5'
+                    elif '#sha256=' in parsed.path:
+                        pk_name, cksum = pk_name.split('#md5=')
+                        pk_name = pk_name.replace('#md5=', '')
+                        algo = 'sha256'
                     else:
-                        md5_data = ''
+                        algo = None
+                        cksum = None
 
                     absolute_url = urlparse.urljoin(url, parsed.path)
                     external_link= urllib.urlencode({'remote': absolute_url})
-                    data = VersionData(pk_name, md5_data, external_link)
+                    data = VersionData(pk_name, cksum, algo, external_link)
                     package_versions.append(data)
 
                 else:
@@ -191,7 +182,7 @@ def simple_package(package_name):
                 continue
 
             external_link = urllib.urlencode({'remote': external_url})
-            data = VersionData(package_version, '', external_link)
+            data = VersionData(package_version, None, None, external_link)
             package_versions.append(data)
 
         package_versions.sort(key=lambda v: v.name)
