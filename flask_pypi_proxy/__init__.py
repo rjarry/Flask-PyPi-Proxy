@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-VERSION = '0.5.1.post1'
+VERSION = '0.5.1.post2'

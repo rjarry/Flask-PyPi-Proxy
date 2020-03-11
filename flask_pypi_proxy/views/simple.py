@@ -121,7 +121,7 @@ def simple_package(package_name):
         # contains the list of pacges whih where checked because
         # on the link they had the information of
         visited_download_pages = set()
-        soup = BeautifulSoup(content)
+        soup = BeautifulSoup(content, 'lxml')
         package_versions = []
 
         for panchor in soup.find_all('a'):
@@ -213,7 +213,7 @@ def find_external_links(url):
                 links.add(response.url)
                 return links
             if response.content:
-                soup = BeautifulSoup(response.content)
+                soup = BeautifulSoup(response.content, 'lxml')
                 for anchor in soup.find_all('a'):
                     href = anchor.get("href")
                     if url_is_egg_file(href):
